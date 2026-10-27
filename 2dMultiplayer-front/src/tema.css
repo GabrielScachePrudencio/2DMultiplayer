@@ -1,0 +1,230 @@
+/* ============================================================
+   Tema pixel: creme, vinho e azul-escuro, com leve efeito CRT.
+   Paleta tirada da imagem de referencia.
+   ============================================================ */
+:root {
+  --fundo: #0d0b14;
+  --contorno: #0d0c13;
+  --creme: #fbf6c2;
+  --creme-claro: #fffbd9;
+  --creme-escuro: #e6dc9c;
+  --tinta: #0c2539;
+  --tinta-suave: #4a5f72;
+  --vinho: #904a4f;
+  --vinho-escuro: #6d343a;
+  --amarelo: #f5d56e;
+  --menta: #a6ddb8;
+  --coral: #e27555;
+  --azul: #337da4;
+  --malva: #aa73a7;
+  --fonte: "Jersey 15", "Press Start 2P", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-synthesis: none;
+  font-family: var(--fonte);
+  font-size: 22px;
+  color: var(--tinta);
+  background: radial-gradient(ellipse at 50% 30%, #2a2038 0%, var(--fundo) 72%) fixed;
+}
+
+/* padrao quadriculado bem sutil no fundo */
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,.03) 25%, transparent 25%, transparent 50%,
+                    rgba(255,255,255,.03) 50%, rgba(255,255,255,.03) 75%, transparent 75%);
+  background-size: 16px 16px;
+}
+
+/* efeito de tela CRT: linhas + cantos escurecidos. Para desligar: <body class="sem-crt"> */
+body::after {
+  content: "";
+  position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0,0,0,.07) 2px, rgba(0,0,0,.07) 3px),
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 66%, rgba(0,0,0,.26) 100%);
+}
+body.sem-crt::after { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---------- painel (a "carta" creme) ---------- */
+.tela {
+  min-height: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 64px 16px 32px;
+}
+.painel {
+  position: relative;
+  background: var(--creme);
+  border: 4px solid var(--contorno);
+  border-radius: 8px;
+  padding: 44px 22px 22px;
+  box-shadow: inset 0 0 0 3px var(--creme-claro), 0 6px 0 var(--contorno), 0 18px 32px rgba(0,0,0,.45);
+}
+.painel-menu { width: min(620px, 100%); }
+
+/* ---------- faixa de titulo (vinho, com borda interna creme) ---------- */
+.faixa {
+  display: inline-block;
+  background: var(--vinho);
+  color: var(--creme);
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 1.1;
+  padding: 6px 22px 9px;
+  border: 4px solid var(--contorno);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px var(--creme-claro);
+  text-shadow: 2px 2px 0 var(--contorno), -1px 0 rgba(255,70,100,.45), 1px 0 rgba(70,220,255,.35);
+  white-space: nowrap;
+}
+.faixa-topo {
+  position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+  max-width: calc(100% - 24px);
+}
+.faixa-mini { font-size: 26px; padding: 4px 14px 6px; }
+
+/* ---------- botoes ---------- */
+.btn {
+  font-family: inherit; font-weight: 400; font-size: 24px; line-height: 1;
+  color: var(--tinta);
+  background: var(--amarelo);
+  border: 3px solid var(--contorno);
+  border-radius: 6px;
+  padding: 10px 18px 13px;
+  cursor: pointer;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,.18), inset 0 3px 0 rgba(255,255,255,.5), 0 4px 0 var(--contorno);
+  transition: transform .06s, box-shadow .06s, filter .06s;
+}
+.btn:hover:not(:disabled)  { filter: brightness(1.07); transform: translateY(-1px); }
+.btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,.18), inset 0 3px 0 rgba(255,255,255,.5), 0 1px 0 var(--contorno);
+}
+.btn:focus-visible, .carta:focus-visible { outline: 3px dashed var(--azul); outline-offset: 3px; }
+.btn:disabled {
+  background: #cfc9a4; color: #7d7b6b; cursor: not-allowed;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.08), 0 4px 0 var(--contorno);
+}
+.btn-vinho { background: var(--vinho); color: var(--creme); text-shadow: 1px 1px 0 var(--contorno); }
+.btn-menta { background: var(--menta); }
+.btn-coral { background: var(--coral); }
+.btn-azul  { background: var(--azul); color: var(--creme); text-shadow: 1px 1px 0 var(--contorno); }
+.btn-pequeno { font-size: 22px; padding: 7px 13px 10px; }
+
+.acoes { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 4px 0 20px; }
+
+/* ---------- avisos e textos ---------- */
+.aviso-erro {
+  background: #f3b6a4; color: #5a1d12; font-weight: 400;
+  border: 3px solid var(--contorno); border-radius: 6px;
+  padding: 8px 12px; margin: 0 0 14px;
+}
+.aviso-erro.inline { margin: 0; padding: 4px 10px; }
+.vazio { text-align: center; color: var(--tinta-suave); margin: 8px 0 4px; }
+.subtitulo { text-align: center; margin: 0 0 4px; color: var(--tinta-suave); }
+.subtitulo strong { color: var(--vinho); letter-spacing: 2px; }
+
+/* ---------- lista de salas ---------- */
+.lista-salas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.sala {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--creme-claro);
+  border: 3px solid var(--contorno); border-radius: 6px;
+  box-shadow: 0 3px 0 rgba(12,37,57,.35);
+}
+.sala-codigo { flex: 1; min-width: 90px; font-size: 36px; font-weight: 400; letter-spacing: 3px; }
+.pips { display: flex; gap: 4px; }
+.pip { width: 14px; height: 14px; background: var(--creme-escuro); border: 2px solid var(--contorno); }
+.sala.parcial .pip.ocupado { background: var(--amarelo); }
+.sala.cheia   .pip.ocupado { background: var(--coral); }
+.badge {
+  min-width: 52px; text-align: center; font-size: 22px; font-weight: 400;
+  padding: 2px 8px 4px; background: var(--menta);
+  border: 2px solid var(--contorno); border-radius: 4px;
+}
+.sala.parcial .badge { background: var(--amarelo); }
+.sala.cheia   .badge { background: var(--coral); }
+.badge-grande { font-size: 24px; padding: 4px 12px 6px; background: var(--menta); }
+
+/* ---------- modal de classes ---------- */
+.modal-fundo {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  padding: 44px 16px 16px;
+  background: rgba(13,11,20,.8);
+}
+.modal { width: min(780px, 100%); max-height: calc(100vh - 60px); display: flex; flex-direction: column; }
+.cartas {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;
+  margin: 12px 0 14px; padding: 6px 8px 10px;
+  overflow-y: auto; min-height: 0; flex: 1 1 auto;
+}
+.carta {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 8px 12px;
+  font-family: inherit; color: var(--tinta); text-align: center;
+  background: var(--creme-claro);
+  border: 3px solid var(--contorno); border-radius: 6px;
+  box-shadow: 0 4px 0 rgba(12,37,57,.35);
+  cursor: pointer;
+  transition: transform .06s;
+}
+.carta:hover { transform: translateY(-2px); }
+.carta.selecionada {
+  background: var(--amarelo);
+  box-shadow: 0 0 0 3px var(--vinho), 0 4px 0 3px var(--contorno);
+  transform: translateY(-2px);
+}
+.carta img { width: 96px; height: 96px; image-rendering: pixelated; }
+.carta.selecionada img { animation: balanco .7s steps(2) infinite; }
+.carta-nome { font-weight: 400; font-size: 25px; }
+.carta-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 10px; width: 100%; font-size: 19px; text-align: left; }
+.carta-stats b { float: right; }
+.rodape-modal { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+
+/* ---------- tela da sala ---------- */
+.sala-tela { display: flex; flex-direction: column; height: 100%; gap: 10px; padding: 12px 16px 18px; }
+.barra {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--creme);
+  border: 4px solid var(--contorno); border-radius: 8px;
+  box-shadow: inset 0 0 0 3px var(--creme-claro), 0 4px 0 var(--contorno);
+}
+.espera { color: var(--tinta-suave); animation: piscar 1.2s steps(2) infinite; }
+
+.jogadores { display: flex; gap: 12px; flex-wrap: wrap; }
+.jogador-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 14px 6px 8px;
+  background: var(--creme-claro);
+  border: 3px solid var(--contorno);
+  border-left: 10px solid var(--cor-slot, var(--vinho));
+  border-radius: 6px;
+  box-shadow: 0 3px 0 var(--contorno);
+}
+.jogador-card img { width: 48px; height: 48px; image-rendering: pixelated; }
+.jogador-nome { display: block; font-weight: 400; font-size: 24px; }
+.jogador-stats { display: flex; flex-wrap: wrap; gap: 0 12px; font-size: 19px; color: var(--tinta-suave); }
+
+.moldura {
+  flex: 1; min-height: 0;
+  background: #000;
+  border: 4px solid var(--contorno); border-radius: 8px;
+  box-shadow: 0 0 0 3px var(--creme), 0 6px 0 3px var(--contorno);
+  overflow: hidden;
+}
+
+@keyframes piscar { 50% { opacity: .35; } }
+@keyframes balanco { 50% { transform: translateY(-4px); } }

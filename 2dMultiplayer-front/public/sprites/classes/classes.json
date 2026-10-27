@@ -1,0 +1,76 @@
+{
+  "frameLargura": 32,
+  "frameAltura": 32,
+  "frames": {
+    "classe_01.png": {
+      "x": 0,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "origem": 1
+    },
+    "classe_02.png": {
+      "x": 32,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "origem": 6
+    },
+    "classe_03.png": {
+      "x": 64,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "origem": 18
+    },
+    "classe_04.png": {
+      "x": 96,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "origem": 27
+    },
+    "classe_05.png": {
+      "x": 128,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "origem": 12
+    },
+    "classe_06.png": {
+      "x": 160,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "origem": 5
+    },
+    "classe_07.png": {
+      "x": 192,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "origem": 26
+    },
+    "classe_08.png": {
+      "x": 224,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "origem": 16
+    },
+    "classe_09.png": {
+      "x": 256,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "origem": 10
+    },
+    "classe_10.png": {
+      "x": 288,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "origem": 15
+    }
+  }
+}

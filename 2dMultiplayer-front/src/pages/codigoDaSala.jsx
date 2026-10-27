@@ -59,9 +59,13 @@ export default function CodigoDaSala({ onEntrar }) {
     conectar();
 
     return () => {
-      encerrado = true; // saída voluntária: não reconectar
+      encerrado = true; // saida voluntaria: nao reconectar
       clearTimeout(timer);
-      ws.close();
+      if (ws.readyState === WebSocket.CONNECTING) {
+        ws.onopen = () => ws.close(); // ainda conectando: fecha assim que abrir
+      } else {
+        ws.close();
+      }
     };
   }, []);
 
@@ -75,27 +79,47 @@ export default function CodigoDaSala({ onEntrar }) {
   }
 
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Salas</h1>
-      <button onClick={handleCriar}>Criar sala</button>
-      <button onClick={carregar}>Atualizar</button>
+    <div className="tela">
+      <div className="painel painel-menu">
+        <div className="faixa faixa-topo">Salas</div>
 
-      {erro && <p style={{ color: "red" }}>{erro}</p>}
+        <div className="acoes">
+          <button className="btn btn-menta" onClick={handleCriar}>Criar sala</button>
+          <button className="btn" onClick={carregar}>Atualizar</button>
+        </div>
 
-      <ul>
-        {salas.map((s) => {
-          const online = contagens[s.codigo] ?? 0;
-          const cheia = online >= s.capacidade;
-          return (
-            <li key={s.id}>
-              {s.codigo} — {online}/{s.capacidade}{" "}
-              <button onClick={() => onEntrar(s.codigo)} disabled={cheia}>
-                {cheia ? "Cheia" : "Entrar"}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+        {erro && <p className="aviso-erro">{erro}</p>}
+        {!erro && salas.length === 0 && (
+          <p className="vazio">Nenhuma sala ainda. Crie a primeira!</p>
+        )}
+
+        <ul className="lista-salas">
+          {salas.map((s) => {
+            const online = contagens[s.codigo] ?? 0;
+            const capacidade = Number(s.capacidade) || 0;
+            const cheia = capacidade > 0 && online >= capacidade;
+            const estado = cheia ? "cheia" : online > 0 ? "parcial" : "vazia";
+            return (
+              <li key={s.id} className={`sala ${estado}`}>
+                <span className="sala-codigo">{s.codigo}</span>
+                <span className="pips" aria-label={`${online} de ${capacidade} jogadores`}>
+                  {Array.from({ length: capacidade }, (_, i) => (
+                    <span key={i} className={`pip ${i < online ? "ocupado" : ""}`} />
+                  ))}
+                </span>
+                <span className="badge">{online}/{capacidade}</span>
+                <button
+                  className="btn btn-vinho btn-pequeno"
+                  onClick={() => onEntrar(s.codigo)}
+                  disabled={cheia}
+                >
+                  {cheia ? "Cheia" : "Entrar"}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 }

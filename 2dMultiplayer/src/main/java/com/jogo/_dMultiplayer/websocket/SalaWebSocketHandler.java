@@ -1,5 +1,8 @@
 package com.jogo._dMultiplayer.websocket;
 import com.jogo._dMultiplayer.event.ContagemMudouEvent;
+import com.jogo._dMultiplayer.game.JogadorInfo;
+import com.jogo._dMultiplayer.model.Classes;
+import com.jogo._dMultiplayer.service.ClassesService;
 import org.springframework.context.ApplicationEventPublisher;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -27,6 +30,8 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
     private static final int TICKS_POR_SEGUNDO = 30;
     private static final double[][] SPAWNS = { {40, 140}, {460, 140} };
 
+
+    private final ClassesService classesService;
     private final SalasService salasService;
     private final ObjectMapper mapper = new ObjectMapper();
     private final MapaJogo mapaJogo = new MapaJogo();
@@ -64,7 +69,9 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
                 List<Map<String, Object>> dados = new ArrayList<>();
                 for (Jogador j : lista) {
                     dados.add(Map.of("id", j.getId(), "slot", j.getSlot(),
-                            "x", Math.round(j.getX()), "y", Math.round(j.getY())));
+                            "x", Math.round(j.getX()), "y", Math.round(j.getY()),
+                            "vida", j.getVida(), "vidaMax", j.getVida(),
+                            "classeId", j.getClasseId()));
                 }
                 Map<String, Object> msg = Map.of("tipo", "estado", "jogadores", dados);
                 for (WebSocketSession s : sessoes) enviar(s, msg);
@@ -80,21 +87,26 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
         String tipo = json.path("tipo").asText();
 
         if ("entrar".equals(tipo)) {
-            entrar(session, json.path("codigo").asText());
+            entrar(session, json.path("codigo").asText(), json.path("classeId").asInt());
         } else if ("input".equals(tipo)) {
             Jogador j = jogadores.get(session.getId());
             if (j != null) j.setInput(json.path("dx").asInt(), json.path("dy").asInt());
         }
     }
 
-    private void entrar(WebSocketSession session, String codigo) {
+    private void entrar(WebSocketSession session, String codigo, int classeId) {
         if (sessaoParaSala.containsKey(session.getId())) return;
 
         if (salasService.findByCodigo(codigo) == null) {
             enviar(session, Map.of("tipo", "erro", "mensagem", "Sala não existe"));
             return;
         }
-
+        Optional<Classes> opt = classesService.findById(classeId);
+        if (opt.isEmpty()) {
+            enviar(session, Map.of("tipo", "erro", "mensagem", "Classe inválida"));
+            return;
+        }
+        Classes classe = opt.get();
         synchronized (this) {
             Set<WebSocketSession> sessoes =
                     salas.computeIfAbsent(codigo, k -> ConcurrentHashMap.newKeySet());
@@ -103,8 +115,13 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
                 return;
             }
             int slot = escolherSlot(sessoes);
-            jogadores.put(session.getId(),
-                    new Jogador(session.getId(), SPAWNS[slot][0], SPAWNS[slot][1], slot));
+
+            Jogador novo = new Jogador(session.getId(), SPAWNS[slot][0], SPAWNS[slot][1], slot,
+                    classe.getDanoFisico(), classe.getDanoMagico(),
+                    classe.getDefesaFisica(), classe.getDefesaMagica(),
+                    classe.getSorte(), classe.getVida(), classeId);
+            novo.setNomeClasse(classe.getNome());
+            jogadores.put(session.getId(), novo);
             sessoes.add(session);
             sessaoParaSala.put(session.getId(), codigo);
         }
@@ -141,8 +158,19 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
 
     private void avisarSala(String codigo) {
         Set<WebSocketSession> sessoes = salas.getOrDefault(codigo, Set.of());
-        Map<String, Object> msg = Map.of("tipo", "sala:atualizada", "total", sessoes.size(), "max", MAX);
+
+        List<JogadorInfo> infos = new ArrayList<>();
+        for (WebSocketSession s : sessoes) {
+            Jogador j = jogadores.get(s.getId());
+            if (j != null) infos.add(JogadorInfo.de(j));
+        }
+        infos.sort(Comparator.comparingInt(JogadorInfo::slot));
+
+        Map<String, Object> msg = Map.of(
+                "tipo", "sala:atualizada", "total", sessoes.size(),
+                "max", MAX, "jogadores", infos);
         for (WebSocketSession s : sessoes) enviar(s, msg);
+
         publisher.publishEvent(new ContagemMudouEvent());
     }
 

@@ -4,3 +4,4 @@ export const LINHAS = 18;
 export const LARGURA = COLUNAS * TILE; // 512
 export const ALTURA = LINHAS * TILE;   // 288
 export const TAMANHO_JOGADOR = 12;
+export const CORES_JOGADOR = ["#e74c3c", "#3498db"];

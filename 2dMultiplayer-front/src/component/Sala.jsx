@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import CanvasJogo from "../pages/CanvasJogo";
-
+import PainelJogadores from "./PainelJogadores";
 import { WS_URL } from "../config";
 
-export default function Sala({ codigo, onSair }) {
+export default function Sala({ codigo, classe, onSair }) {
   const [presenca, setPresenca] = useState({ total: 0, max: 2 });
   const [erro, setErro] = useState(null);
   const wsRef = useRef(null);
   const jogadoresRef = useRef([]);
+  const [infoJogadores, setInfoJogadores] = useState([]);
 
   const enviarInput = useCallback((dx, dy) => {
     const ws = wsRef.current;
@@ -21,13 +22,14 @@ export default function Sala({ codigo, onSair }) {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ tipo: "entrar", codigo }));
+      ws.send(JSON.stringify({ tipo: "entrar", codigo, classeId: classe.id }));
     };
 
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
       if (msg.tipo === "sala:atualizada") {
         setPresenca({ total: msg.total, max: msg.max });
+        setInfoJogadores(msg.jogadores ?? []);
         setErro(null);
       } else if (msg.tipo === "estado") {
         jogadoresRef.current = msg.jogadores;
@@ -43,24 +45,28 @@ export default function Sala({ codigo, onSair }) {
       ws.close();
       jogadoresRef.current = [];
     };
-  }, [codigo]);
+  }, [codigo, classe.id]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#111", color: "#fff" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "8px 16px" }}>
-        <button onClick={onSair}>← Voltar</button>
-        <strong>Sala {codigo}</strong>
+    <div className="sala-tela">
+      <div className="barra">
+        <button className="btn btn-coral btn-pequeno" onClick={onSair}>Voltar</button>
+        <span className="faixa faixa-mini">Sala {codigo}</span>
         {erro ? (
-          <span style={{ color: "#ff6b6b" }}>{erro}</span>
+          <span className="aviso-erro inline">{erro}</span>
         ) : (
-          <span>
-            {presenca.total}/{presenca.max} jogadores
-            {presenca.total < presenca.max && " — aguardando outro jogador..."}
-          </span>
+          <>
+            <span className="badge badge-grande">{presenca.total}/{presenca.max} jogadores</span>
+            {presenca.total < presenca.max && (
+              <span className="espera">aguardando outro jogador...</span>
+            )}
+          </>
         )}
       </div>
 
-      <div style={{ flex: 1, minHeight: 0 }}>
+      <PainelJogadores jogadores={infoJogadores} />
+
+      <div className="moldura">
         {!erro && <CanvasJogo jogadoresRef={jogadoresRef} onInput={enviarInput} />}
       </div>
     </div>

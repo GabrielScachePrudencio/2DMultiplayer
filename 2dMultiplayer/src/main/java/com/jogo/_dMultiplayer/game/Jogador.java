@@ -1,5 +1,9 @@
 package com.jogo._dMultiplayer.game;
 
+import jakarta.persistence.Column;
+import lombok.Data;
+
+@Data
 public class Jogador {
     public static final int TAMANHO = 12;
     private static final double VELOCIDADE = 90; // pixels por segundo
@@ -9,8 +13,32 @@ public class Jogador {
     private double x, y;
     private volatile int dx, dy;
 
+    //do game
+    private int danoFisico = 0;
+    private int danoMagico = 0;
+    private int defesaFisica = 0;
+    private int defesaMagica = 0;
+    private int sorte = 0;
+    private int vida = 0;
+    private String nomeClasse;
+    private int classeId;
+
     public Jogador(String id, double x, double y, int slot) {
         this.id = id; this.x = x; this.y = y; this.slot = slot;
+    }
+
+    public Jogador(String id, double x, double y, int slot, int danoFisico, int danoMagico,
+                   int defesaFisica, int defesaMagica, int sorte
+    , int vida, int classeId) {
+        this(id, x, y, slot);
+        setDanoFisico(danoFisico);
+        setDanoMagico(danoMagico);
+        setDefesaFisica(defesaFisica);
+        setDefesaMagica(defesaMagica);
+        setSorte(sorte);
+        setVida(vida);
+        setClasseId(classeId);
+
     }
 
     // o servidor só aceita direção (-1, 0 ou 1), nunca posição
@@ -31,8 +59,4 @@ public class Jogador {
         if (!mapa.colide(x, ny, TAMANHO, TAMANHO)) y = ny;
     }
 
-    public String getId() { return id; }
-    public int getSlot() { return slot; }
-    public double getX() { return x; }
-    public double getY() { return y; }
 }
