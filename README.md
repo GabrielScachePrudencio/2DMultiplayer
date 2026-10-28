@@ -1,14 +1,10 @@
 # 2D Multiplayer
 
 Jogo multiplayer 2D em desenvolvimento, com salas em tempo real, seleção de classe e um mapa com temática de castelo. O projeto é dividido em um cliente web e um servidor Java que controla as salas, a movimentação e o estado compartilhado do jogo.
+<img width="1827" height="943" alt="image" src="https://github.com/user-attachments/assets/547dfa65-0b8e-412f-8dc6-4d3bd535f668" />
 
-## Imagens
+<img width="1889" height="842" alt="image" src="https://github.com/user-attachments/assets/9f92f627-2a92-441a-84f4-cc4004a39538" />
 
-Adicione suas capturas de tela em `docs/images/` e, se quiser, descomente e ajuste as linhas abaixo.
-
-<!-- ![Tela de salas](docs/images/tela-salas.png) -->
-<!-- ![Seleção de classe](docs/images/selecao-classe.png) -->
-<!-- ![Partida no castelo](docs/images/partida-castelo.png) -->
 
 ## Funcionalidades atuais
 
