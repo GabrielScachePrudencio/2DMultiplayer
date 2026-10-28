@@ -4,16 +4,24 @@ import PainelJogadores from "./PainelJogadores";
 import { WS_URL } from "../config";
 
 export default function Sala({ codigo, classe, onSair }) {
-  const [presenca, setPresenca] = useState({ total: 0, max: 2 });
+  const [presenca, setPresenca] = useState({ total: 0, max: null });
   const [erro, setErro] = useState(null);
   const wsRef = useRef(null);
   const jogadoresRef = useRef([]);
+  const inimigosRef = useRef([]);
   const [infoJogadores, setInfoJogadores] = useState([]);
 
   const enviarInput = useCallback((dx, dy) => {
     const ws = wsRef.current;
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ tipo: "input", dx, dy }));
+    }
+  }, []);
+
+  const enviarMira = useCallback((x, y) => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ tipo: "mira", x, y }));
     }
   }, []);
 
@@ -32,7 +40,8 @@ export default function Sala({ codigo, classe, onSair }) {
         setInfoJogadores(msg.jogadores ?? []);
         setErro(null);
       } else if (msg.tipo === "estado") {
-        jogadoresRef.current = msg.jogadores;
+        jogadoresRef.current = msg.jogadores ?? [];
+        inimigosRef.current = msg.inimigos ?? [];
       } else if (msg.tipo === "erro") {
         setErro(msg.mensagem);
       }
@@ -44,6 +53,7 @@ export default function Sala({ codigo, classe, onSair }) {
       ws.onclose = null;
       ws.close();
       jogadoresRef.current = [];
+      inimigosRef.current = [];
     };
   }, [codigo, classe.id]);
 
@@ -56,9 +66,13 @@ export default function Sala({ codigo, classe, onSair }) {
           <span className="aviso-erro inline">{erro}</span>
         ) : (
           <>
-            <span className="badge badge-grande">{presenca.total}/{presenca.max} jogadores</span>
-            {presenca.total < presenca.max && (
-              <span className="espera">aguardando outro jogador...</span>
+            {presenca.max != null && (
+              <>
+                <span className="badge badge-grande">{presenca.total}/{presenca.max} jogadores</span>
+                {presenca.total < presenca.max && (
+                  <span className="espera">aguardando outro jogador...</span>
+                )}
+              </>
             )}
           </>
         )}
@@ -67,7 +81,14 @@ export default function Sala({ codigo, classe, onSair }) {
       <PainelJogadores jogadores={infoJogadores} />
 
       <div className="moldura">
-        {!erro && <CanvasJogo jogadoresRef={jogadoresRef} onInput={enviarInput} />}
+        {!erro && (
+          <CanvasJogo
+            jogadoresRef={jogadoresRef}
+            inimigosRef={inimigosRef}
+            onInput={enviarInput}
+            onMira={enviarMira}
+          />
+        )}
       </div>
     </div>
   );

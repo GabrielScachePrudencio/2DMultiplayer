@@ -22,6 +22,7 @@ public class Jogador {
     private int vida = 0;
     private String nomeClasse;
     private int classeId;
+    private volatile double anguloMira;
 
     public Jogador(String id, double x, double y, int slot) {
         this.id = id; this.x = x; this.y = y; this.slot = slot;
@@ -57,6 +58,13 @@ public class Jogador {
 
         double ny = y + ay * passo;
         if (!mapa.colide(x, ny, TAMANHO, TAMANHO)) y = ny;
+    }
+
+    public void atualizarMira(double alvoX, double alvoY) {
+        anguloMira = Math.atan2(
+                alvoY - (y + TAMANHO / 2.0),
+                alvoX - (x + TAMANHO / 2.0)
+        );
     }
 
 }

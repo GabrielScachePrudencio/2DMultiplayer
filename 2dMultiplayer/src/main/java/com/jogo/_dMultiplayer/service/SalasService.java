@@ -5,7 +5,10 @@ import com.jogo._dMultiplayer.repository.SalaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +21,22 @@ public class SalasService {
 
     public Salas save(Salas salas) {
         return salaRepository.save(salas);
+    }
+
+    public Salas criar(int capacidade) {
+        Salas sala = new Salas();
+        sala.setCapacidade(capacidade);
+        sala.setDatacriacao(LocalDateTime.now());
+
+        String codigo;
+        do {
+            codigo = UUID.randomUUID().toString().replace("-", "")
+                    .substring(0, 6).toUpperCase(Locale.ROOT);
+        } while (findByCodigo(codigo) != null);
+
+        sala.setCodigo(codigo);
+        sala.setNome("Sala " + codigo);
+        return salaRepository.save(sala);
     }
 
     public void delete(Salas salas) {

@@ -1,7 +1,11 @@
 export const TILE = 16;
-export const COLUNAS = 32;
-export const LINHAS = 18;
-export const LARGURA = COLUNAS * TILE; // 512
-export const ALTURA = LINHAS * TILE;   // 288
+export const COLUNAS = 64;
+export const LINHAS = 36;
+export const LARGURA = COLUNAS * TILE;
+export const ALTURA = LINHAS * TILE;
+export const COLUNAS_VIEWPORT = 32;
+export const LINHAS_VIEWPORT = 18;
+export const LARGURA_VIEWPORT = COLUNAS_VIEWPORT * TILE;
+export const ALTURA_VIEWPORT = LINHAS_VIEWPORT * TILE;
 export const TAMANHO_JOGADOR = 12;
 export const CORES_JOGADOR = ["#e74c3c", "#3498db"];

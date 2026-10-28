@@ -122,6 +122,16 @@ body.sem-crt::after { display: none; }
 .btn-pequeno { font-size: 22px; padding: 7px 13px 10px; }
 
 .acoes { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 4px 0 20px; }
+.campo-capacidade { display: flex; align-items: center; gap: 8px; }
+.seletor-capacidade {
+  min-height: 48px;
+  padding: 6px 10px;
+  color: var(--tinta);
+  background: var(--creme-claro);
+  border: 3px solid var(--contorno);
+  border-radius: 6px;
+  font: inherit;
+}
 
 /* ---------- avisos e textos ---------- */
 .aviso-erro {

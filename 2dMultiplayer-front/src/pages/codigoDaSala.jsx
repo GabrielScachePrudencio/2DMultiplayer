@@ -7,8 +7,12 @@ export async function listarSalas() {
   return res.json();
 }
 
-export async function criarSala() {
-  const res = await fetch(`${API_URL}/salas`, { method: "POST" });
+export async function criarSala(capacidade) {
+  const res = await fetch(`${API_URL}/salas`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ capacidade }),
+  });
   if (!res.ok) throw new Error("Erro ao criar sala");
   return res.json();
 }
@@ -17,6 +21,7 @@ export default function CodigoDaSala({ onEntrar }) {
   const [salas, setSalas] = useState([]);
   const [contagens, setContagens] = useState({}); // { codigo: quantidade }
   const [erro, setErro] = useState(null);
+  const [capacidade, setCapacidade] = useState(4);
 
   async function carregar() {
     try {
@@ -71,7 +76,7 @@ export default function CodigoDaSala({ onEntrar }) {
 
   async function handleCriar() {
     try {
-      await criarSala();
+      await criarSala(capacidade);
       carregar();
     } catch (e) {
       setErro(e.message);
@@ -84,6 +89,19 @@ export default function CodigoDaSala({ onEntrar }) {
         <div className="faixa faixa-topo">Salas</div>
 
         <div className="acoes">
+          <label className="campo-capacidade" htmlFor="capacidade-sala">
+            Jogadores
+            <select
+              id="capacidade-sala"
+              className="seletor-capacidade"
+              value={capacidade}
+              onChange={(event) => setCapacidade(Number(event.target.value))}
+            >
+              {[2, 3, 4, 5, 6, 7, 8].map((quantidade) => (
+                <option key={quantidade} value={quantidade}>{quantidade}</option>
+              ))}
+            </select>
+          </label>
           <button className="btn btn-menta" onClick={handleCriar}>Criar sala</button>
           <button className="btn" onClick={carregar}>Atualizar</button>
         </div>

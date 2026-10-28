@@ -16,9 +16,47 @@ export default class RenderizadorJogador {
     const img = this.sprites[jogador.classeId];
     if (img && img.complete && img.naturalWidth > 0) {
       // o sprite fica centralizado no corpo (hitbox) e com os pes na base dele
-      const sx = Math.round(x + TAMANHO_JOGADOR / 2 - TAMANHO_SPRITE / 2);
       const sy = y + TAMANHO_JOGADOR - TAMANHO_SPRITE + 2;
-      ctx.drawImage(img, sx, sy);
+      const angulo = jogador.anguloMira ?? 0;
+      const centroX = x + TAMANHO_JOGADOR / 2;
+      const centroY = y + TAMANHO_JOGADOR / 2;
+
+      ctx.save();
+      ctx.translate(centroX, 0);
+      if (Math.cos(angulo) < 0) ctx.scale(-1, 1);
+      ctx.drawImage(img, -TAMANHO_SPRITE / 2, sy);
+      ctx.restore();
+
+      const pontaX = centroX + Math.cos(angulo) * 19;
+      const pontaY = centroY + Math.sin(angulo) * 19;
+      const baseX = pontaX - Math.cos(angulo) * 6;
+      const baseY = pontaY - Math.sin(angulo) * 6;
+      const ladoX = Math.cos(angulo + Math.PI / 2) * 4;
+      const ladoY = Math.sin(angulo + Math.PI / 2) * 4;
+
+      ctx.strokeStyle = "#1b1712";
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(centroX, centroY);
+      ctx.lineTo(pontaX, pontaY);
+      ctx.stroke();
+
+      ctx.strokeStyle = "#ffd166";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(centroX, centroY);
+      ctx.lineTo(pontaX, pontaY);
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffd166";
+      ctx.beginPath();
+      ctx.moveTo(pontaX, pontaY);
+      ctx.lineTo(baseX + ladoX, baseY + ladoY);
+      ctx.lineTo(baseX - ladoX, baseY - ladoY);
+      ctx.closePath();
+      ctx.fill();
+
       topo = sy;
     } else {
       // sem sprite (ainda carregando ou classe sem imagem): quadrado colorido

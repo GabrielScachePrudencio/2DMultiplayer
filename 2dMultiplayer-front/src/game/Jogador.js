@@ -1,8 +1,9 @@
 export default class Jogador {
-  constructor(id, x, y) {
+  constructor(id, x, y, direcao) {
     this.id = id;
     this.x = x;
     this.y = y;
+    this.direcao = direcao;
     this.tamanho = 12;
     this.velocidade = 90; // pixels por segundo
   }
