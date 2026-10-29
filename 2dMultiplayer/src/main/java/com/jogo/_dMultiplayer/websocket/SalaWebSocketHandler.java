@@ -77,11 +77,14 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
                     ));
                 }
                 InimigoInfo inimigo = inimigosTestePorSala.get(sala.getKey());
-                Map<String, Object> msg = Map.of(
-                        "tipo", "estado",
-                        "jogadores", dados,
-                        "inimigos", inimigo == null ? List.of() : List.of(inimigo));
-                for (WebSocketSession s : sessoes) enviar(s, msg);
+                for (WebSocketSession s : sessoes) {
+                    Map<String, Object> msg = Map.of(
+                            "tipo", "estado",
+                            "meuId", s.getId(),
+                            "jogadores", dados,
+                            "inimigos", inimigo == null ? List.of() : List.of(inimigo));
+                    enviar(s, msg);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

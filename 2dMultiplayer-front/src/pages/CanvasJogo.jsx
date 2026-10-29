@@ -1,11 +1,13 @@
 import { useEffect, useRef } from "react";
-import { LARGURA_VIEWPORT, ALTURA_VIEWPORT } from "../game/constantes";
+import { LARGURA_VIEWPORT, ALTURA_VIEWPORT, TAMANHO_JOGADOR } from "../game/constantes";
 import { MAPA_TEXTO } from "../game/mapaDados";
 import Mapa from "../game/Mapa";
 import Teclado from "../game/Teclado";
 import Renderizador from "../game/render/Renderizador";
+import RenderizadorAtaque from "../game/render/RenderizadorAtaque";
+import { configDoAtaque, criarAtaque, atualizarAtaques } from "../game/ataques";
 
-export default function CanvasJogo({ jogadoresRef, inimigosRef, onInput, onMira }) {
+export default function CanvasJogo({ jogadoresRef, inimigosRef, jogadorIdRef, onInput, onMira }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -13,6 +15,7 @@ export default function CanvasJogo({ jogadoresRef, inimigosRef, onInput, onMira 
     const mapa = new Mapa(MAPA_TEXTO);
     const teclado = new Teclado();
     const renderizador = new Renderizador(ctx);
+    const ataqueR = new RenderizadorAtaque();
 
     let ultimoDx = 0, ultimoDy = 0;
     let raf;
@@ -21,6 +24,41 @@ export default function CanvasJogo({ jogadoresRef, inimigosRef, onInput, onMira 
     let mouseY = 0;
     let mouseDentro = false;
     let ultimoEnvioMira = 0;
+
+    let ataques = [];
+    let ultimoAtaque = -9999;
+    let ultimoFrame = performance.now();
+
+    function atacar() {
+      const jogadores = jogadoresRef.current;
+      const eu = jogadores.find((j) => j.id === jogadorIdRef.current);
+      if (!eu) return;
+
+      const agora = performance.now();
+      const { cameraX, cameraY } = renderizador.calcularCamera(jogadores);
+      const mira = { x: mouseX + cameraX, y: mouseY + cameraY };
+      const origem = {
+        x: eu.x + TAMANHO_JOGADOR / 2,
+        y: eu.y + TAMANHO_JOGADOR / 2,
+      };
+
+      const ataque = criarAtaque(configDoAtaque(eu.classeId), origem, mira, agora, ultimoAtaque);
+      if (!ataque) return;
+      ultimoAtaque = agora;
+      ataques.push(ataque);
+    }
+
+    function aoClicar(event) {
+      atualizarMouse(event);
+      atacar();
+    }
+
+    function aoTecla(e) {
+      if (e.key === " ") {
+        e.preventDefault();
+        atacar();
+      }
+    }
 
     const canvas = canvasRef.current;
 
@@ -37,11 +75,15 @@ export default function CanvasJogo({ jogadoresRef, inimigosRef, onInput, onMira 
 
     canvas.addEventListener("mousemove", atualizarMouse);
     canvas.addEventListener("mouseleave", sairDoCanvas);
+    canvas.addEventListener("mousedown", aoClicar);
+    window.addEventListener("keydown", aoTecla);
 
     function loop() {
       const { dx, dy } = teclado.direcao();
       const jogadores = jogadoresRef.current;
       const agora = performance.now();
+      const dt = Math.min((agora - ultimoFrame) / 1000, 0.05);
+      ultimoFrame = agora;
 
       if (dx !== ultimoDx || dy !== ultimoDy) {
         onInput(dx, dy); // só avisa o servidor quando a direção muda
@@ -54,6 +96,10 @@ export default function CanvasJogo({ jogadoresRef, inimigosRef, onInput, onMira 
         ultimoEnvioMira = agora;
       }
       renderizador.desenhar(mapa, jogadoresRef.current, inimigosRef.current);
+      ataques = atualizarAtaques(ataques, dt, agora);
+      const { cameraX, cameraY } = renderizador.calcularCamera(jogadores);
+      ataqueR.desenhar(ctx, ataques, cameraX, cameraY, agora);
+
       raf = requestAnimationFrame(loop);
     }
     raf = requestAnimationFrame(loop);
@@ -63,6 +109,8 @@ export default function CanvasJogo({ jogadoresRef, inimigosRef, onInput, onMira 
       teclado.destruir();
       canvas.removeEventListener("mousemove", atualizarMouse);
       canvas.removeEventListener("mouseleave", sairDoCanvas);
+      canvas.removeEventListener("mousedown", aoClicar);
+      window.removeEventListener("keydown", aoTecla);
     };
   }, []); // eslint-disable-line
 

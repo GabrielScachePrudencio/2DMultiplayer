@@ -8,6 +8,7 @@ export default function Sala({ codigo, classe, onSair }) {
   const [erro, setErro] = useState(null);
   const wsRef = useRef(null);
   const jogadoresRef = useRef([]);
+  const jogadorIdRef = useRef(null);
   const inimigosRef = useRef([]);
   const [infoJogadores, setInfoJogadores] = useState([]);
 
@@ -41,6 +42,7 @@ export default function Sala({ codigo, classe, onSair }) {
         setErro(null);
       } else if (msg.tipo === "estado") {
         jogadoresRef.current = msg.jogadores ?? [];
+        jogadorIdRef.current = msg.meuId ?? jogadorIdRef.current;
         inimigosRef.current = msg.inimigos ?? [];
       } else if (msg.tipo === "erro") {
         setErro(msg.mensagem);
@@ -53,6 +55,7 @@ export default function Sala({ codigo, classe, onSair }) {
       ws.onclose = null;
       ws.close();
       jogadoresRef.current = [];
+      jogadorIdRef.current = null;
       inimigosRef.current = [];
     };
   }, [codigo, classe.id]);
@@ -84,6 +87,7 @@ export default function Sala({ codigo, classe, onSair }) {
         {!erro && (
           <CanvasJogo
             jogadoresRef={jogadoresRef}
+            jogadorIdRef={jogadorIdRef}
             inimigosRef={inimigosRef}
             onInput={enviarInput}
             onMira={enviarMira}
