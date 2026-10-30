@@ -38,6 +38,12 @@ public class Classes {
 
     private int vida = 0;
 
+
+    private String tipo;
+
+    @Column(name = "velocidade_ataque")
+    private Double velocidadeAtaque;
+
     @Column(name = "datacriacao", updatable = false,
             insertable = false)
     private LocalDateTime dataCriacao;

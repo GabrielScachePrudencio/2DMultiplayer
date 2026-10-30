@@ -20,9 +20,15 @@ public class Jogador {
     private int defesaMagica = 0;
     private int sorte = 0;
     private int vida = 0;
+    private int vidaMax = 0;
     private String nomeClasse;
     private int classeId;
     private volatile double anguloMira;
+    private volatile boolean quiseAtacar;
+    private long ultimoAtaqueMs = -1_000_000;
+    private String tipoAtaque = "corpo";
+    private double velocidadeAtaque = 1;
+
 
     public Jogador(String id, double x, double y, int slot) {
         this.id = id; this.x = x; this.y = y; this.slot = slot;
@@ -38,6 +44,7 @@ public class Jogador {
         setDefesaMagica(defesaMagica);
         setSorte(sorte);
         setVida(vida);
+        setVidaMax(vida);
         setClasseId(classeId);
 
     }
@@ -66,5 +73,22 @@ public class Jogador {
                 alvoX - (x + TAMANHO / 2.0)
         );
     }
+
+
+    public void configurarAtaque(String tipo, Double velocidade) {
+        if (tipo != null) this.tipoAtaque = tipo;
+        if (velocidade != null && velocidade > 0) this.velocidadeAtaque = velocidade;
+    }
+    public String getTipoAtaque() { return tipoAtaque; }
+
+    public void pedirAtaque() { quiseAtacar = true; }
+    public boolean consumirPedidoAtaque() { boolean r = quiseAtacar; quiseAtacar = false; return r; }
+
+    public boolean podeAtacar(long agoraMs) { return agoraMs - ultimoAtaqueMs >= (long) (1000 / velocidadeAtaque); }
+    public void marcarAtaque(long agoraMs) { ultimoAtaqueMs = agoraMs; }
+
+    public void receberDano(int dano) { vida = Math.max(0, vida - dano); }
+    public boolean morto() { return vida <= 0; }
+    public void reviver(double novoX, double novoY) { x = novoX; y = novoY; vida = vidaMax; }
 
 }

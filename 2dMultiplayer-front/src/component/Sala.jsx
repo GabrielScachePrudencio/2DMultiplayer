@@ -26,6 +26,14 @@ export default function Sala({ codigo, classe, onSair }) {
     }
   }, []);
 
+  const enviarAtaque = useCallback((x, y) => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ tipo: "mira", x, y }));
+      ws.send(JSON.stringify({ tipo: "atacar" }));
+    }
+  }, []);
+
   useEffect(() => {
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
@@ -91,6 +99,7 @@ export default function Sala({ codigo, classe, onSair }) {
             inimigosRef={inimigosRef}
             onInput={enviarInput}
             onMira={enviarMira}
+            onAtacar={enviarAtaque}
           />
         )}
       </div>

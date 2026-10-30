@@ -5,18 +5,28 @@ import Mapa from "../game/Mapa";
 import Teclado from "../game/Teclado";
 import Renderizador from "../game/render/Renderizador";
 import RenderizadorAtaque from "../game/render/RenderizadorAtaque";
-import { configDoAtaque, criarAtaque, atualizarAtaques } from "../game/ataques";
+import { configDoAtaque, criarAtaque, atualizarAtaques, carregarClasses } from "../game/ataques";
+import RenderizadorIndicadores from "../game/render/RenderizadorIndicadores";
 
-export default function CanvasJogo({ jogadoresRef, inimigosRef, jogadorIdRef, onInput, onMira }) {
+export default function CanvasJogo({
+  jogadoresRef,
+  inimigosRef,
+  jogadorIdRef,
+  onInput,
+  onMira,
+  onAtacar,
+}) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
+    carregarClasses().catch(console.error);
     const ctx = canvasRef.current.getContext("2d");
     const mapa = new Mapa(MAPA_TEXTO);
     const teclado = new Teclado();
     const renderizador = new Renderizador(ctx);
     const ataqueR = new RenderizadorAtaque();
-
+    const indicadorR = new RenderizadorIndicadores();
+    
     let ultimoDx = 0, ultimoDy = 0;
     let raf;
 
@@ -31,12 +41,14 @@ export default function CanvasJogo({ jogadoresRef, inimigosRef, jogadorIdRef, on
 
     function atacar() {
       const jogadores = jogadoresRef.current;
+      const { cameraX, cameraY } = renderizador.calcularCamera(jogadores, jogadorIdRef.current);
+      const mira = { x: mouseX + cameraX, y: mouseY + cameraY };
+      onAtacar(mira.x, mira.y);
+
       const eu = jogadores.find((j) => j.id === jogadorIdRef.current);
       if (!eu) return;
 
       const agora = performance.now();
-      const { cameraX, cameraY } = renderizador.calcularCamera(jogadores);
-      const mira = { x: mouseX + cameraX, y: mouseY + cameraY };
       const origem = {
         x: eu.x + TAMANHO_JOGADOR / 2,
         y: eu.y + TAMANHO_JOGADOR / 2,
@@ -91,15 +103,15 @@ export default function CanvasJogo({ jogadoresRef, inimigosRef, jogadorIdRef, on
         ultimoDy = dy;
       }
       if (mouseDentro && agora - ultimoEnvioMira >= 33) {
-        const { cameraX, cameraY } = renderizador.calcularCamera(jogadores);
-        onMira(mouseX + cameraX, mouseY + cameraY);
+      const { cameraX, cameraY } = renderizador.calcularCamera(jogadores, jogadorIdRef.current);        
+         onMira(mouseX + cameraX, mouseY + cameraY);
         ultimoEnvioMira = agora;
       }
-      renderizador.desenhar(mapa, jogadoresRef.current, inimigosRef.current);
+      renderizador.desenhar(mapa, jogadoresRef.current, inimigosRef.current, jogadorIdRef.current);
       ataques = atualizarAtaques(ataques, dt, agora);
-      const { cameraX, cameraY } = renderizador.calcularCamera(jogadores);
+      const { cameraX, cameraY } = renderizador.calcularCamera(jogadores, jogadorIdRef.current);
       ataqueR.desenhar(ctx, ataques, cameraX, cameraY, agora);
-
+      indicadorR.desenhar(ctx, jogadores, jogadorIdRef.current, cameraX, cameraY);
       raf = requestAnimationFrame(loop);
     }
     raf = requestAnimationFrame(loop);

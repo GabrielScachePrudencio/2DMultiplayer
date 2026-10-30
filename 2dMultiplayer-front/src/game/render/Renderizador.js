@@ -20,54 +20,49 @@ export default class Renderizador {
     this.jogadorR = new RenderizadorJogador(carregarSprites());
   }
 
-  desenhar(mapa, jogadores, inimigos = []) {
-    this.ctx.clearRect(0, 0, LARGURA_VIEWPORT, ALTURA_VIEWPORT);
-    const { cameraX, cameraY } = this.calcularCamera(jogadores);
+  desenhar(mapa, jogadores, inimigos = [], meuId = null) {
+  this.ctx.clearRect(0, 0, LARGURA_VIEWPORT, ALTURA_VIEWPORT);
+  const { cameraX, cameraY } = this.calcularCamera(jogadores, meuId);
 
-    this.ctx.save();
-    this.ctx.translate(-cameraX, -cameraY);
-    this.mapaR.desenhar(this.ctx, mapa);
+  this.ctx.save();
+  this.ctx.translate(-cameraX, -cameraY);
+  this.mapaR.desenhar(this.ctx, mapa);
 
-    // quem esta mais embaixo na tela e desenhado por cima
-    const entidades = [
-      ...jogadores.map((entidade) => ({ ...entidade, tipoRenderizacao: "jogador" })),
-      ...inimigos.map((entidade) => ({ ...entidade, tipoRenderizacao: "inimigo" })),
-    ];
-    entidades.sort((a, b) => a.y - b.y);
-    entidades.forEach((entidade) => {
-      if (entidade.tipoRenderizacao === "inimigo") {
-        this.inimigoR.desenhar(this.ctx, entidade);
-      } else {
-        this.jogadorR.desenhar(
-          this.ctx,
-          entidade,
-          CORES_JOGADOR[entidade.slot % CORES_JOGADOR.length]
-        );
-      }
-    });
-    this.ctx.restore();
-  }
+  // quem esta mais embaixo na tela e desenhado por cima
+  const entidades = [
+    ...jogadores.map((entidade) => ({ ...entidade, tipoRenderizacao: "jogador" })),
+    ...inimigos.map((entidade) => ({ ...entidade, tipoRenderizacao: "inimigo" })),
+  ];
+  entidades.sort((a, b) => a.y - b.y);
+  entidades.forEach((entidade) => {
+    if (entidade.tipoRenderizacao === "inimigo") {
+      this.inimigoR.desenhar(this.ctx, entidade);
+    } else {
+      this.jogadorR.desenhar(
+        this.ctx,
+        entidade,
+        CORES_JOGADOR[entidade.slot % CORES_JOGADOR.length]
+      );
+    }
+  });
+  this.ctx.restore();
+}
 
-  calcularCamera(jogadores) {
-    const centroX = jogadores.length
-      ? (Math.min(...jogadores.map((j) => j.x)) +
-          Math.max(...jogadores.map((j) => j.x + TAMANHO_JOGADOR))) / 2
-      : LARGURA / 2;
+// A câmera segue o jogador com esse id. Se ele ainda não chegou do servidor,
+// fica no centro do mapa por alguns frames.
+calcularCamera(jogadores, meuId) {
+  const eu = jogadores.find((j) => j.id === meuId);
 
-    const centroY = jogadores.length
-      ? (Math.min(...jogadores.map((j) => j.y)) +
-          Math.max(...jogadores.map((j) => j.y + TAMANHO_JOGADOR))) / 2
-      : ALTURA / 2;
+  const centroX = eu ? eu.x + TAMANHO_JOGADOR / 2 : LARGURA / 2;
+  const centroY = eu ? eu.y + TAMANHO_JOGADOR / 2 : ALTURA / 2;
 
-    return {
-      cameraX: Math.max(
-        0,
-        Math.min(LARGURA - LARGURA_VIEWPORT, centroX - LARGURA_VIEWPORT / 2)
-      ),
-      cameraY: Math.max(
-        0,
-        Math.min(ALTURA - ALTURA_VIEWPORT, centroY - ALTURA_VIEWPORT / 2)
-      ),
-    };
-  }
+  return {
+    cameraX: Math.round(
+      Math.max(0, Math.min(LARGURA - LARGURA_VIEWPORT, centroX - LARGURA_VIEWPORT / 2))
+    ),
+    cameraY: Math.round(
+      Math.max(0, Math.min(ALTURA - ALTURA_VIEWPORT, centroY - ALTURA_VIEWPORT / 2))
+    ),
+  };
+}
 }

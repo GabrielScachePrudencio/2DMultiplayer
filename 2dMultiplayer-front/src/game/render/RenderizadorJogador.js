@@ -1,7 +1,8 @@
 import { TAMANHO_JOGADOR } from "../constantes";
 import { TAMANHO_SPRITE } from "../spritesClasses";
 
-const LARGURA_BARRA = 20;
+const LARGURA_BARRA = 24;
+const ALTURA_BARRA = 4;
 
 export default class RenderizadorJogador {
   constructor(sprites) {
@@ -66,13 +67,15 @@ export default class RenderizadorJogador {
 
     // barra de vida acima da cabeca
     if (jogador.vidaMax > 0) {
-      const pct = Math.max(0, jogador.vida / jogador.vidaMax);
+      const pct = Math.max(0, Math.min(1, jogador.vida / jogador.vidaMax));
       const bx = Math.round(x + TAMANHO_JOGADOR / 2 - LARGURA_BARRA / 2);
-      const by = Math.max(2, topo - 4);
+      const by = Math.max(2, topo - ALTURA_BARRA - 3);
       ctx.fillStyle = "#000";
-      ctx.fillRect(bx - 1, by - 1, LARGURA_BARRA + 2, 4);
-      ctx.fillStyle = "#2ecc71";
-      ctx.fillRect(bx, by, Math.round(LARGURA_BARRA * pct), 2);
+      ctx.fillRect(bx - 1, by - 1, LARGURA_BARRA + 2, ALTURA_BARRA + 2);
+      ctx.fillStyle = "#541f27";
+      ctx.fillRect(bx, by, LARGURA_BARRA, ALTURA_BARRA);
+      ctx.fillStyle = pct > 0.5 ? "#2ecc71" : pct > 0.25 ? "#f1c40f" : "#e74c3c";
+      ctx.fillRect(bx, by, Math.round(LARGURA_BARRA * pct), ALTURA_BARRA);
     }
   }
 }

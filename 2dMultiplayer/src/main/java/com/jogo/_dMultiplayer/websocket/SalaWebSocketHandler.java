@@ -1,15 +1,12 @@
 package com.jogo._dMultiplayer.websocket;
 import com.jogo._dMultiplayer.event.ContagemMudouEvent;
-import com.jogo._dMultiplayer.game.InimigoInfo;
-import com.jogo._dMultiplayer.game.JogadorInfo;
+import com.jogo._dMultiplayer.game.*;
 import com.jogo._dMultiplayer.model.Classes;
 import com.jogo._dMultiplayer.model.Salas;
 import com.jogo._dMultiplayer.service.ClassesService;
 import org.springframework.context.ApplicationEventPublisher;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import com.jogo._dMultiplayer.game.Jogador;
-import com.jogo._dMultiplayer.game.MapaJogo;
 import com.jogo._dMultiplayer.service.SalasService;
 import jakarta.annotation.PostConstruct;   // Spring Boot 2: javax.annotation
 import jakarta.annotation.PreDestroy;      // Spring Boot 2: javax.annotation
@@ -41,6 +38,12 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
     private final Map<String, InimigoInfo> inimigosTestePorSala = new ConcurrentHashMap<>();
     private final ApplicationEventPublisher publisher;
 
+    private double cx(Jogador j) { return j.getX() + Jogador.TAMANHO / 2.0; }
+    private double cy(Jogador j) { return j.getY() + Jogador.TAMANHO / 2.0; }
+
+    private final Map<String, Inimigo> inimigosPorSala = new ConcurrentHashMap<>(); // no lugar de inimigosTestePorSala
+    private final Map<String, List<Projetil>> projeteisPorSala = new ConcurrentHashMap<>();
+
     private ScheduledExecutorService loop;
 
     @PostConstruct
@@ -67,22 +70,24 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
                 }
                 lista.sort(Comparator.comparingInt(Jogador::getSlot));
 
+                Inimigo inimigo = inimigosPorSala.get(sala.getKey());
+                processarCombate(sala.getKey(), sessoes, lista, inimigo, dt);
+
                 List<Map<String, Object>> dados = new ArrayList<>();
                 for (Jogador j : lista) {
                     dados.add(Map.of("id", j.getId(), "slot", j.getSlot(),
                             "x", Math.round(j.getX()), "y", Math.round(j.getY()),
-                            "vida", j.getVida(), "vidaMax", j.getVida(),
+                            "vida", j.getVida(), "vidaMax", j.getVidaMax(),
                             "classeId", j.getClasseId(),
                             "anguloMira", j.getAnguloMira()
                     ));
                 }
-                InimigoInfo inimigo = inimigosTestePorSala.get(sala.getKey());
                 for (WebSocketSession s : sessoes) {
                     Map<String, Object> msg = Map.of(
                             "tipo", "estado",
                             "meuId", s.getId(),
                             "jogadores", dados,
-                            "inimigos", inimigo == null ? List.of() : List.of(inimigo));
+                            "inimigos", inimigo == null ? List.of() : List.of(inimigo.paraInfo()));
                     enviar(s, msg);
                 }
             }
@@ -101,6 +106,9 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
         } else if ("input".equals(tipo)) {
             Jogador j = jogadores.get(session.getId());
             if (j != null) j.setInput(json.path("dx").asInt(), json.path("dy").asInt());
+        } else if ("atacar".equals(tipo)) {
+            Jogador j = jogadores.get(session.getId());
+            if (j != null) j.pedirAtaque(); // só marca a intenção; o tick decide
         } else if ("mira".equals(tipo)) {
             Jogador j = jogadores.get(session.getId());
             double x = json.path("x").asDouble();
@@ -110,9 +118,7 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
                 j.atualizarMira(x, y);
             }
         }
-
     }
-
     private void entrar(WebSocketSession session, String codigo, int classeId) {
         if (sessaoParaSala.containsKey(session.getId())) return;
 
@@ -151,12 +157,11 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
                     classe.getDefesaFisica(), classe.getDefesaMagica(),
                     classe.getSorte(), classe.getVida(), classeId);
             novo.setNomeClasse(classe.getNome());
+            novo.configurarAtaque(classe.getTipo(), classe.getVelocidadeAtaque());
             jogadores.put(session.getId(), novo);
             sessoes.add(session);
             sessaoParaSala.put(session.getId(), codigo);
-            inimigosTestePorSala.computeIfAbsent(codigo, chave ->
-                    new InimigoInfo("goblin-treino", "Goblin de treino", "goblin",
-                            548, 280, 100, 100));
+            inimigosPorSala.computeIfAbsent(codigo, chave -> new Inimigo(548, 280, 100));
         }
         avisarSala(codigo, capacidade);
     }
@@ -245,15 +250,15 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
         Set<WebSocketSession> sessoes = salas.get(codigo);
         if (sessoes != null) {
             sessoes.remove(session);
-            if (sessoes.isEmpty()) {
+            if (sessoes.isEmpty()) { // só limpa goblin e projéteis quando a sala esvazia
                 salas.remove(codigo);
-                inimigosTestePorSala.remove(codigo);
+                inimigosPorSala.remove(codigo);
+                projeteisPorSala.remove(codigo);
             }
         }
         Salas sala = salasService.findByCodigo(codigo);
         avisarSala(codigo, sala == null ? 0 : sala.getCapacidade());
     }
-
     private void avisarSala(String codigo, int capacidade) {
         Set<WebSocketSession> sessoes = salas.getOrDefault(codigo, Set.of());
 
@@ -278,5 +283,86 @@ public class SalaWebSocketHandler extends TextWebSocketHandler {
                 if (session.isOpen()) session.sendMessage(new TextMessage(mapper.writeValueAsString(obj)));
             }
         } catch (IOException ignored) {}
+    }
+
+
+    private void processarCombate(String codigo, Set<WebSocketSession> sessoes,
+                                  List<Jogador> lista, Inimigo inimigo, double dt) {
+        long agora = System.currentTimeMillis();
+        List<Projetil> projeteis = projeteisPorSala.computeIfAbsent(codigo, k -> new ArrayList<>());
+
+        // 1) pedidos de ataque: cooldown, depois golpe imediato ou projétil novo
+        for (Jogador atacante : lista) {
+            if (!atacante.consumirPedidoAtaque() || atacante.morto()) continue;
+            if (!atacante.podeAtacar(agora)) continue;
+            atacante.marcarAtaque(agora);
+
+            FichaAtaque f = FichaAtaque.de(atacante.getTipoAtaque());
+            double ox = cx(atacante), oy = cy(atacante);
+            double angulo = atacante.getAnguloMira();
+            int danoBase = f.magico() ? atacante.getDanoMagico() : atacante.getDanoFisico();
+
+            if (f.corpo()) {
+                for (Jogador alvo : lista) {
+                    if (alvo == atacante || alvo.morto()) continue;
+                    if (Combate.acertouGolpe(ox, oy, angulo, cx(alvo), cy(alvo),
+                            Jogador.TAMANHO / 2.0, f.alcance(), f.arcoGraus()))
+                        baterEmJogador(atacante, alvo, danoBase, false);
+                }
+                if (inimigo != null && Combate.acertouGolpe(ox, oy, angulo, inimigo.x, inimigo.y,
+                        inimigo.raio, f.alcance(), f.arcoGraus()))
+                    baterNoInimigo(atacante, inimigo, danoBase, false);
+            } else {
+                projeteis.add(new Projetil(atacante.getId(), ox, oy, angulo, f, danoBase));
+            }
+        }
+
+        // 2) mover projéteis e ver se bateram
+        for (Iterator<Projetil> it = projeteis.iterator(); it.hasNext(); ) {
+            Projetil p = it.next();
+            Jogador dono = jogadores.get(p.donoId);
+            p.mover(dt);
+            boolean remover = dono == null
+                    || p.percorrido >= p.alcance
+                    || mapaJogo.colide(p.x - 1, p.y - 1, 2, 2); // parede
+
+            if (!remover) {
+                for (Jogador alvo : lista) {
+                    if (alvo == dono || alvo.morto()) continue;
+                    if (Combate.projetilAcertou(p.x, p.y, p.raio, cx(alvo), cy(alvo), Jogador.TAMANHO / 2.0)) {
+                        baterEmJogador(dono, alvo, p.dano, p.magico);
+                        remover = true;
+                        break;
+                    }
+                }
+            }
+            if (!remover && inimigo != null
+                    && Combate.projetilAcertou(p.x, p.y, p.raio, inimigo.x, inimigo.y, inimigo.raio)) {
+                baterNoInimigo(dono, inimigo, p.dano, p.magico);
+                remover = true;
+            }
+            if (remover) it.remove();
+        }
+
+        // 3) mortes: jogador volta ao spawn com vida cheia; goblin de treino volta inteiro
+        for (Jogador j : lista) {
+            if (j.morto()) {
+                double[] s = escolherSpawn(sessoes);
+                if (s != null) j.reviver(s[0], s[1]);
+            }
+        }
+        if (inimigo != null && inimigo.vida <= 0) inimigo.vida = inimigo.vidaMax;
+    }
+
+    private void baterEmJogador(Jogador atacante, Jogador alvo, int danoBase, boolean magico) {
+        boolean crit = Combate.rolarCritico(atacante.getSorte());
+        int defesa = magico ? alvo.getDefesaMagica() : alvo.getDefesaFisica();
+        alvo.receberDano(Combate.calcularDano(danoBase, defesa, crit));
+    }
+
+    private void baterNoInimigo(Jogador atacante, Inimigo alvo, int danoBase, boolean magico) {
+        boolean crit = Combate.rolarCritico(atacante.getSorte());
+        int defesa = magico ? alvo.defesaMagica : alvo.defesaFisica;
+        alvo.vida = Math.max(0, alvo.vida - Combate.calcularDano(danoBase, defesa, crit));
     }
 }
